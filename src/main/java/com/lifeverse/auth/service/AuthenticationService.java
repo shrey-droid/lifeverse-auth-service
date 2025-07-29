@@ -1,6 +1,7 @@
 package com.lifeverse.auth.service;
 
 import com.lifeverse.auth.dto.*;
+import com.lifeverse.auth.exception.EmailAlreadyRegisteredException;
 import com.lifeverse.auth.model.*;
 import com.lifeverse.auth.repository.UserRepository;
 import com.lifeverse.auth.jwt.JwtService;
@@ -17,6 +18,12 @@ public class AuthenticationService {
     private final JwtService jwtService;
 
     public AuthResponse register(RegisterRequest request) {
+
+        // 🔒 Check if user with the email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyRegisteredException("Email is already in use.");
+        }
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
