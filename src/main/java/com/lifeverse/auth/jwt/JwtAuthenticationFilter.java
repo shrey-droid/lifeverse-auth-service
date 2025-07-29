@@ -33,25 +33,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
+        System.out.println("Incoming Request URL: " + request.getRequestURI());
+        System.out.println("🔐 Auth Header: " + authHeader);
+
         // Skip if no Bearer token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("❌ No valid Bearer token found. Skipping filter.");
             filterChain.doFilter(request, response);
             return;
         }
 
         jwt = authHeader.substring(7); // Remove "Bearer " prefix
         userEmail = jwtService.extractUsername(jwt);
+        System.out.println("✅ Extracted Email from Token: " + userEmail);
 
         // Validate token if not already authenticated
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+            System.out.println("✅ UserDetails Loaded: " + userDetails.getUsername());
 
-            if (jwtService.isTokenValid(jwt, (com.lifeverse.auth.model.User) userDetails)) {
+            if (jwtService.isTokenValid(jwt,userDetails)) {
+                System.out.println("✅ Token is valid. Setting authentication...");
+
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                System.out.println("❌ Token is NOT valid.");
             }
         }
 
