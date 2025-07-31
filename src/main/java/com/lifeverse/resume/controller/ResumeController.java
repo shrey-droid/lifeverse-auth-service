@@ -27,6 +27,7 @@ public class ResumeController {
         ResumeScoreResponse response = resumeService.processResume(file, user.getUsername());
         return ResponseEntity.ok(response);
     }
+
     @GetMapping("/my-scores")
     public ResponseEntity<List<ResumeScoreResponse>> getMyResumeScores(@AuthenticationPrincipal UserDetails user) {
         List<ResumeScore> scores = resumeService.getScoresByEmail(user.getUsername());
@@ -35,24 +36,26 @@ public class ResumeController {
                 .toList();
         return ResponseEntity.ok(response);
     }
-    @PostMapping("/tailor")
-    public ResponseEntity<String> tailorResume(
-            @RequestParam("resume") MultipartFile resumeFile,
-            @RequestParam("job") MultipartFile jobDescFile,
-            @AuthenticationPrincipal UserDetails user) {
 
-        String tailoredOutput = resumeService.tailorResumeToJob(resumeFile, jobDescFile);
-        return ResponseEntity.ok(tailoredOutput);
-    }
+    // Tailor resume temporarily disabled for MVP
+    // @PostMapping("/tailor")
+    // public ResponseEntity<String> tailorResume(@RequestParam("resume") MultipartFile resumeFile,
+    //                                            @RequestParam("job") MultipartFile jobDescFile,
+    //                                            @AuthenticationPrincipal UserDetails user) {
+    //     String tailoredOutput = resumeService.tailorResumeToJob(resumeFile, jobDescFile);
+    //     return ResponseEntity.ok(tailoredOutput);
+    // }
+
     @PostMapping("/linkedin-upload")
     public ResponseEntity<ResumeScoreResponse> uploadLinkedInResume(@RequestParam("file") MultipartFile file,
                                                                     @AuthenticationPrincipal UserDetails user) {
         ResumeScoreResponse response = resumeService.processLinkedInResume(file, user.getUsername());
         return ResponseEntity.ok(response);
     }
-//    @PostMapping("/ai-fix")
-//    public ResponseEntity<String> aiFixResume(@RequestParam("file") MultipartFile file) {
-//        String suggestions = resumeService.improveResumeWithAI(file);
-//        return ResponseEntity.ok(suggestions);
-//    }
+
+    @PostMapping("/fix")
+    public ResponseEntity<String> fixResume(@RequestParam("file") MultipartFile file) {
+        String suggestions = resumeService.fixResumeWithAI(file);
+        return ResponseEntity.ok(suggestions);
+    }
 }

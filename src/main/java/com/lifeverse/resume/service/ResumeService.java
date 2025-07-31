@@ -4,6 +4,7 @@ import com.lifeverse.auth.model.User;
 import com.lifeverse.auth.repository.UserRepository;
 import com.lifeverse.resume.dto.ResumeScoreResponse;
 import com.lifeverse.resume.entity.ResumeScore;
+import com.lifeverse.resume.openApi.OpenAiHelper;
 import com.lifeverse.resume.repository.ResumeScoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -27,6 +28,8 @@ public class ResumeService {
 
     private final ResumeScoreRepository scoreRepository;
     private final UserRepository userRepository;
+    private final OpenAiHelper openAiHelper;
+
 
     /**
      * ✅ Process resume file, extract keywords, compute score, and save to DB
@@ -104,9 +107,26 @@ public class ResumeService {
             int totalJobKeywords = present.size() + missing.size();
             int score = totalJobKeywords == 0 ? 0 : (int) (((double) totalMatchedKeywords / totalJobKeywords) * 100);
 
-            return "✅ Matched: " + String.join(", ", present)
+            // 🧠 Step 1: Build prompt
+            String prompt = "You're an expert resume writer. Please tailor the following resume to better match the job description. "
+                    + "Reword the summary, emphasize relevant experience, and insert missing keywords where appropriate. "
+                    + "Return only the new tailored resume content.\n\n"
+                    + "Resume:\n" + resumeText + "\n\n"
+                    + "Job Description:\n" + jobText;
+
+            // 🧠 Step 2: Call OpenAI to generate tailored resume
+            String tailoredResume = openAiHelper.sendToGPT(prompt); // or use generateTailoredResume()
+
+            // 🧠 Step 3: Append keyword insight (optional)
+            String insights = "\n\n✅ Matched: " + String.join(", ", present)
                     + "\n❌ Missing: " + String.join(", ", missing)
                     + "\n🎯 Resume Match Score: " + score + "%";
+
+            return tailoredResume + insights;
+
+//            return "✅ Matched: " + String.join(", ", present)
+//                    + "\n❌ Missing: " + String.join(", ", missing)
+//                    + "\n🎯 Resume Match Score: " + score + "%";
 
         } catch (Exception e) {
             throw new RuntimeException("Error tailoring resume", e);
@@ -139,6 +159,20 @@ public class ResumeService {
 
         } catch (Exception e) {
             throw new RuntimeException("Error processing LinkedIn resume", e);
+        }
+    }
+
+    public String fixResumeWithAI(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream();
+             PDDocument doc = PDDocument.load(inputStream)) {
+
+            String resumeText = new PDFTextStripper().getText(doc);
+            String prompt = "You're an expert resume coach. Please analyze the following resume and provide suggestions to improve formatting, structure, and keyword relevance:\n\n" + resumeText;
+
+            return openAiHelper.sendToGPT(prompt);  // ✅ Works now
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fixing resume with AI", e);
         }
     }
 }
