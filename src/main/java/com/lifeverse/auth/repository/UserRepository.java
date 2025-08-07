@@ -11,3 +11,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // ✅ Add this line to enable email existence check
     boolean existsByEmail(String email);
 }
+
